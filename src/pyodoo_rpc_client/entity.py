@@ -36,6 +36,10 @@ class OdooRpcEntity:
     def id(self):
         return self.__id
 
+    @property
+    def _model(self):
+        return self.__model
+
     def exists(self) -> bool:
         return bool(self.__id)
 
@@ -76,6 +80,15 @@ class OdooRpcEntity:
         current_data = dict(self)
         return {key: val for key, val in current_data.items() if val != self.__init_data.get(key, None)}
 
+    def get_changed_fields(self):
+        return self.get_changed_data().keys()
+
+    @staticmethod
+    def _extract_id(create_result: Any):
+        if isinstance(create_result, list):
+            return create_result[0] if create_result else None
+        return create_result
+
     def save(self):
         if self.__id is not None:
             data = self.get_changed_data()
@@ -83,8 +96,9 @@ class OdooRpcEntity:
                 self.__model.write([self.__id], data)
         else:
             create_result = self.__model.create(dict(self))
-            if create_result:
-                self.__id = create_result
+            created_id = self._extract_id(create_result)
+            if created_id is not None:
+                self.__id = created_id
                 self.refresh()
         return self.__id
 

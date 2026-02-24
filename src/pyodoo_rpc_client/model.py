@@ -46,8 +46,88 @@ class OdooRpcModel:
             self._fields = data if isinstance(data, dict) else {}
         return self._fields
 
+    @staticmethod
+    def _normalize_ids(ids: Any):
+        if ids is None:
+            return []
+        if isinstance(ids, (int, str)):
+            return [int(ids)]
+        if isinstance(ids, tuple):
+            ids = list(ids)
+        if isinstance(ids, list):
+            if len(ids) == 1 and isinstance(ids[0], list):
+                ids = ids[0]
+            parsed = []
+            for item in ids:
+                try:
+                    parsed.append(int(item))
+                except Exception:
+                    continue
+            return parsed
+        return ids
+
+    @staticmethod
+    def _normalize_domain(domain: Any):
+        if isinstance(domain, list) and len(domain) == 1 and isinstance(domain[0], list):
+            return domain[0]
+        return domain
+
+    @staticmethod
+    def _default_method_return(method: str):
+        method = method.lower()
+        if method in {"search", "search_read", "read"}:
+            return []
+        if method in {"fields_get"}:
+            return {}
+        if method in {"write", "unlink"}:
+            return False
+        if method in {"create"}:
+            return None
+        return []
+
+    def _build_rpc_call(self, method: str, args: tuple, kwargs: dict):
+        call_args = list(args)
+        call_kwargs = copy.deepcopy(kwargs)
+        lower_method = method.lower()
+
+        if lower_method in {"search", "search_read"}:
+            if call_args:
+                call_args[0] = self._normalize_domain(call_args[0])
+        elif lower_method == "read":
+            if call_args:
+                call_args[0] = self._normalize_ids(call_args[0])
+        elif lower_method == "create":
+            if call_args:
+                first = call_args[0]
+                if isinstance(first, tuple):
+                    first = list(first)
+                if isinstance(first, list) and len(first) == 1 and isinstance(first[0], dict):
+                    first = first[0]
+                call_args[0] = first
+        elif lower_method == "write":
+            ids_arg = call_args[0] if len(call_args) >= 1 else None
+            vals_arg = call_args[1] if len(call_args) >= 2 else None
+
+            if len(call_args) == 1 and isinstance(call_args[0], (list, tuple)) and len(call_args[0]) >= 2:
+                ids_arg = call_args[0][0]
+                vals_arg = call_args[0][1]
+
+            call_args = []
+            if ids_arg is not None:
+                call_args.append(self._normalize_ids(ids_arg))
+            if vals_arg is not None:
+                vals = vals_arg
+                if isinstance(vals, list) and len(vals) == 1 and isinstance(vals[0], dict):
+                    vals = vals[0]
+                call_args.append(vals)
+        elif lower_method == "unlink":
+            if call_args:
+                call_args[0] = self._normalize_ids(call_args[0])
+
+        return call_args, call_kwargs
+
     def _exec(self, method: str, args=None, kwargs=None, default=None):
-        kwargs = dict(kwargs or {})
+        kwargs = copy.deepcopy(kwargs or {})
         if self.context:
             ctx = copy.deepcopy(self.context)
             if isinstance(kwargs.get("context"), dict):
@@ -57,26 +137,40 @@ class OdooRpcModel:
         self.error = self.client.error
         return result
 
+    def execute(self, method: str, *args, **kwargs):
+        default = self._default_method_return(method)
+        try:
+            call_args, call_kwargs = self._build_rpc_call(method, args, kwargs)
+        except Exception as exc:
+            self.error = exc
+            if self._debug:
+                raise
+            return default
+        return self._exec(method, args=call_args, kwargs=call_kwargs, default=default)
+
+    def execute_kw(self, method: str, *args, **kwargs):
+        return self.execute(method, *args, **kwargs)
+
     def search(self, domain, **kwargs):
-        return self._exec("search", args=[domain], kwargs=kwargs, default=[])
+        return self.execute("search", domain, **kwargs)
 
     def read(self, ids, **kwargs):
-        return self._exec("read", args=[ids], kwargs=kwargs, default=[])
+        return self.execute("read", ids, **kwargs)
 
     def search_read(self, domain, **kwargs):
-        records = self._exec("search_read", args=[domain], kwargs=kwargs, default=[])
+        records = self.execute("search_read", domain, **kwargs)
         if not isinstance(records, list):
             return []
         return [OdooRpcEntity(self, data) for data in records]
 
     def create(self, vals, **kwargs):
-        return self._exec("create", args=[vals], kwargs=kwargs, default=None)
+        return self.execute("create", vals, **kwargs)
 
     def write(self, ids, vals, **kwargs):
-        return self._exec("write", args=[ids, vals], kwargs=kwargs, default=False)
+        return self.execute("write", ids, vals, **kwargs)
 
     def unlink(self, ids, **kwargs):
-        return self._exec("unlink", args=[ids], kwargs=kwargs, default=False)
+        return self.execute("unlink", ids, **kwargs)
 
     def get(self, pk):
         return OdooRpcEntity(self, pk)
@@ -89,6 +183,6 @@ class OdooRpcModel:
 
     def __getattr__(self, method):
         def function(*_args, **_kwargs):
-            return self._exec(method, args=list(_args), kwargs=_kwargs, default=[])
+            return self.execute(method, *_args, **_kwargs)
 
         return function
