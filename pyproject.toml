@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "pyodoo-rpc-client"
-version = "18.0.2"
+version = "18.0.3"
 description = "Odoo RPC client for Odoo versions using XML-RPC/JSON-RPC"
 readme = "README.md"
 requires-python = ">=3.9"
