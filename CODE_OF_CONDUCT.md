@@ -22,4 +22,4 @@ This Code of Conduct applies in project spaces, including Issues, Pull Requests,
 
 ## Enforcement
 
-Project maintainers may remove or edit comments, close threads, or block participation for behavior that violates this policy.
+Project maintainers may remove or edit comments, close threads, or block participation for behavior that violates this policy. Thanks
