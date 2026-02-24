@@ -8,6 +8,8 @@ on:
 jobs:
   publish:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
 
     steps:
       - name: Check out repository
@@ -24,7 +26,28 @@ jobs:
           python -m pip install build
           python -m build
 
+      - name: Validate tag matches project version
+        run: |
+          python - <<'PY'
+          import os
+          import tomllib
+
+          with open("pyproject.toml", "rb") as f:
+              version = tomllib.load(f)["project"]["version"]
+
+          ref = os.environ["GITHUB_REF_NAME"]
+          tag_version = ref[1:] if ref.startswith("v") else ref
+
+          if tag_version != version:
+              raise SystemExit(
+                  f"Tag/version mismatch: tag '{ref}' != project version '{version}'."
+              )
+
+          print(f"Version check passed: {version}")
+          PY
+
       - name: Publish package to PyPI
         uses: pypa/gh-action-pypi-publish@release/v1
         with:
           password: ${{ secrets.PYPI_API_TOKEN }}
+          attestations: false
