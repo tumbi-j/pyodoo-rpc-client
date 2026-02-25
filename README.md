@@ -1,6 +1,8 @@
 # pyodoo-rpc-client (Odoo RPC)
 
-Python client for Odoo XML-RPC object/common services for older Odoo versions and legacy integrations.
+Python client for the Odoo legacy RPC API (XML-RPC object/common services), intended for Odoo v19 and below.
+
+For the Odoo JSON 2 API (v19+ compliant), use `pyodoo-client`.
 
 ## Features
 
@@ -62,8 +64,8 @@ partners = odoo.model("res.partner").search_read(
 
 ## Compatibility Notes
 
-- Intended for pre-JSON-2 Odoo integrations.
-- Odoo 20 deprecates legacy RPC endpoints; for Odoo 19+ prefer `pyodoo-client`.
+- This package is for the Odoo legacy RPC API for Odoo v19 and below.
+- For the Odoo JSON 2 API (v19+ compliant), refer to `pyodoo-client`.
 
 ## Contributing
 

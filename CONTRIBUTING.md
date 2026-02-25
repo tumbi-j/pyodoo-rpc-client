@@ -8,6 +8,11 @@ Thanks for your interest in improving `pyodoo-rpc-client`.
 - Use **Discussions** (if enabled in GitHub settings) for open-ended questions, compatibility advice, and design conversations.
 - Open **Pull Requests** for focused fixes and enhancements.
 
+## Project scope
+
+- This repository targets the Odoo legacy RPC API for Odoo v19 and below.
+- For the Odoo JSON 2 API (v19+ compliant), refer to `pyodoo-client`.
+
 ## Before opening an Issue
 
 - Search existing Issues first.
