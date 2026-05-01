@@ -52,6 +52,7 @@ class OdooRpcClient:
             self.logged_in = bool(self.uid)
             self.error = None
         except Exception as exc:
+            raise exc
             self.error = OdooRpcError("Failed to initialize RPC client", cause=exc)
             self.logged_in = False
             if self.debug:
