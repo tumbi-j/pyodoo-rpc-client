@@ -95,6 +95,7 @@ class OdooRpcClient:
             self.error = None
             return result
         except Exception as exc:
+            raise exc
             wrapped = OdooRpcError(f"RPC call failed for {model_name}.{method}", cause=exc)
             self.error = wrapped
             should_raise = self.debug if debug is None else bool(debug)

@@ -68,9 +68,7 @@ class OdooRpcModel:
 
     @staticmethod
     def _normalize_domain(domain: Any):
-        if isinstance(domain, list) and len(domain) == 1 and isinstance(domain[0], list):
-            return domain[0]
-        return domain
+        return domain if isinstance(domain, list) else []
 
     @staticmethod
     def _default_method_return(method: str):
